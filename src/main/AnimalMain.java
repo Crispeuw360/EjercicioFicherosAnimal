@@ -23,12 +23,11 @@ public class AnimalMain {
 		return Utilidades.leerInt();
 	}
 
-	public static void mostrarAnimales(ObjectInputStream ois, File fich) {
+	public static void mostrarAnimales(File fich) {
 		boolean finArchivo = false;
-		if (fich.exists()) 
-		{
+		if (fich.exists()) {
 			try {
-				ois = new ObjectInputStream(new FileInputStream(fich));
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fich));
 
 				// Leer mientras no se alcance el fin del archivo
 				while (!finArchivo) {
@@ -44,66 +43,160 @@ public class AnimalMain {
 
 			} catch (Exception e) {
 				System.out.println("Fatal error");
-			} 
-		}else
-		{
+			}
+		} else {
 			System.out.println("Fichero nuevo");
 		}
 	}
+
 	public static void añadir(File fich) {
-		int mas;
-		int edad;	
-		String id;
-		String nombre;
-		
-		if (fich.exists()) 
-		{
+		String id, nombre;
+		int edad;
+
+		if (fich.exists()) {
 			System.out.println("El fichero ya existe, se añadirán al final");
-			FileOutputStream fos = null;
+			MyObjectOutputStream moos;
 			try {
-				fos = new FileOutputStream(fich, true);
+				moos = new MyObjectOutputStream(new FileOutputStream(fich, true));
+				System.out.println("Introduce el id: ");
+				id = Utilidades.introducirCadena();
+				System.out.println("Introduce el nombre: ");
+				nombre = Utilidades.introducirCadena();
+				System.out.println("Introduce la edad: ");
+				edad = Utilidades.leerInt();
+				Animal aux = new Animal(id, nombre, edad);
+				moos.writeObject(aux);
+				moos.close();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
-			MyObjectOutputStream moos = null;
-			try {
-				moos = new MyObjectOutputStream(fos);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			do {
-				System.out.println("Introduce el Id unico");
+
+		} else {
+			System.out.println("Fichero nuevo");
+			ObjectOutputStream oos;
+			try {
+				oos = new ObjectOutputStream(new FileOutputStream(fich));
+				System.out.println("Introduce el id: ");
 				id = Utilidades.introducirCadena();
-				
-				System.out.println("Introduce el nombre:");
+				System.out.println("Introduce el nombre: ");
 				nombre = Utilidades.introducirCadena();
-				
-				System.out.println("Introduce la edad");
+				System.out.println("Introduce la edad: ");
 				edad = Utilidades.leerInt();
-				
-				Animal a = new Animal(id,nombre,edad);
-				try {
-					moos.writeObject(a);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				System.out.println("Hay mas personas? (1=Si/2=No)");
-				mas = Utilidades.leerInt(1, 2);
-			} while (mas == 1);
-			try {
-				moos.close();
-				fos.close();
+				Animal aux = new Animal(id, nombre, edad);
+				oos.writeObject(aux);
+				oos.close();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-		}else
-		{
-			System.out.println("Primero añade el fichero");
+
+		}
+	}
+
+	public static void modificarEdad(File fich) {
+		boolean modificado = false;
+		boolean finArchivo = false;
+		File fichAux = new File("fichAux.dat");
+
+		int edadMod;
+
+		String id;
+		System.out.println("Introduce el id del animal a modificar edad");
+		id = Utilidades.introducirCadena();
+
+		if (fich.exists()) {
+			try {
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fich));
+				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(fichAux));
+
+				// Leer mientras no se alcance el fin del archivo
+				while (!finArchivo) {
+					try {
+						Animal aux = (Animal) ois.readObject();
+						if (aux.getId().equalsIgnoreCase(id)) {
+							System.out.println("Introduce la nueva edad");
+							edadMod = Utilidades.leerInt();
+							aux.setEdad(edadMod);
+							System.out.println("Edad modificada");
+							modificado = true;
+						} else {
+							System.out.println("No hay un animal con ese id");
+						}
+						oos.writeObject(aux);
+					} catch (EOFException e) {
+						// Fin del archivo alcanzado
+						finArchivo = true;
+					}
+				}
+				oos.close();
+				ois.close();
+				if (modificado) {
+					System.out.println("Animal modificado");
+					if (fich.delete()) {
+						fichAux.renameTo(fich);
+					}
+				}
+
+			} catch (Exception e) {
+				System.out.println("Fatal error");
+			}
+		} else {
+			System.out.println("Fichero nuevo");
+		}
+	}
+
+	public static void eliminar(File fich) {
+		File fichAux = new File("animalesAux.dat");
+		boolean finArchivo = false;
+		boolean modificado = false;
+		ObjectOutputStream oos;
+		ObjectInputStream ois;
+
+		if (fich.exists()) {
+			System.out.println("Introduce el id del animal: ");
+			String id = Utilidades.introducirCadena();
+			try {
+				ois = new ObjectInputStream(new FileInputStream(fich));
+				oos = new ObjectOutputStream(new FileOutputStream(fichAux));
+				// Leer mientras no se alcance el fin del archivo
+				while (!finArchivo) {
+					try {
+						Animal aux = (Animal) ois.readObject();
+						if (!aux.getId().equals(id)) {
+							oos.writeObject(aux);
+
+						} else {
+							modificado = true;
+						}
+
+					} catch (EOFException e) {
+						// Fin del archivo alcanzado
+						finArchivo = true;
+					}
+				}
+				oos.close();
+				ois.close();
+				if (modificado) {
+					System.out.println("Animal eliminado");
+					if (fich.delete()) {
+						fichAux.renameTo(fich);
+					}
+				} else {
+					System.out.println("No existe un animal con ese id");
+				}
+
+			} catch (Exception e) {
+				System.out.println("Fatal error");
+			}
+		} else {
+			System.out.println("El fichero no existe");
 		}
 	}
 
@@ -111,22 +204,20 @@ public class AnimalMain {
 		// TODO Auto-generated method stub
 		int opcion;
 		File fich = new File("animales.dat");
-		ObjectOutputStream oos = null;
-		ObjectInputStream ois = null;
 		do {
 			opcion = mostrarMenu();
 			switch (opcion) {
 			case 1:
-				mostrarAnimales(ois, fich);
+				mostrarAnimales(fich);
 				break;
 			case 2:
 				añadir(fich);
 				break;
 			case 3:
-
+				modificarEdad(fich);
 				break;
 			case 4:
-
+				eliminar(fich);
 				break;
 			}
 		} while (opcion != 5);
